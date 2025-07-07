@@ -525,7 +525,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private Integer timeout;
             private boolean tags = true;
             private Integer depth = 1;
-            private String filter = null;
+            private String filterSpec = null;
 
             @Override
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -572,7 +572,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public FetchCommand filter(String filterSpec) {
-                this.filter = filterSpec;
+                this.filterSpec = filterSpec;
                 return this;
             }
 
@@ -600,6 +600,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         depth = 1;
                     }
                     args.add("--depth=" + depth);
+                }
+
+                // TODO check git min version here
+                if (filterSpec != null) {
+                    // in the future, we could add --refetch if we detect a change in the filter configuration to
+                    // trigger maintenance
+                    args.add("--filter=" + filterSpec);
                 }
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
@@ -737,7 +744,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean tags = true;
             private List<RefSpec> refspecs;
             private Integer depth = 1;
-            private String filter = null;
+            private String filterSpec = null;
 
             @Override
             public CloneCommand url(String url) {
@@ -815,7 +822,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand filter(String filterSpec) {
-                this.filter = filterSpec;
+                this.filterSpec = filterSpec;
                 return this;
             }
 
@@ -889,9 +896,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (refspecs == null) {
                     refspecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/" + origin + "/*"));
                 }
+                if (filterSpec != null) {
+                    launchCommand("config", "--add", "remote." + origin + ".promisor", "true");
+                    launchCommand("config", "--add", "remote." + origin + ".partialclonefilter", filterSpec);
+                }
                 fetch_().from(urIish, refspecs)
                         .shallow(shallow)
                         .depth(depth)
+                        .filter(filterSpec)
                         .timeout(timeout)
                         .tags(tags)
                         .execute();
