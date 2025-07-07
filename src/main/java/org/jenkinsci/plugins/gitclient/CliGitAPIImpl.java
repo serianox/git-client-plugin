@@ -525,6 +525,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private Integer timeout;
             private boolean tags = true;
             private Integer depth = 1;
+            private String filter = null;
 
             @Override
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -566,6 +567,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public FetchCommand depth(Integer depth) {
                 this.depth = depth;
+                return this;
+            }
+
+            @Override
+            public FetchCommand filter(String filterSpec) {
+                this.filter = filterSpec;
                 return this;
             }
 
@@ -730,6 +737,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean tags = true;
             private List<RefSpec> refspecs;
             private Integer depth = 1;
+            private String filter = null;
 
             @Override
             public CloneCommand url(String url) {
@@ -802,6 +810,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public CloneCommand refspecs(List<RefSpec> refspecs) {
                 this.refspecs = new ArrayList<>(refspecs);
+                return this;
+            }
+
+            @Override
+            public CloneCommand filter(String filterSpec) {
+                this.filter = filterSpec;
                 return this;
             }
 

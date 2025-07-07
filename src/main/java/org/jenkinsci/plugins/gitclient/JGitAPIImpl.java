@@ -799,6 +799,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public org.jenkinsci.plugins.gitclient.FetchCommand filter(String filterSpec) {
+                // unsupported, revert to full clone for backward compatibility
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException {
                 try (Repository repo = getRepository()) {
                     Git git = git(repo);
@@ -1657,6 +1663,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public CloneCommand depth(Integer depth) {
                 this.depth = depth;
+                return this;
+            }
+
+            @Override
+            public CloneCommand filter(String filterSpec) {
+                // unsupported, revert to full clone for backward compatibility
                 return this;
             }
 
