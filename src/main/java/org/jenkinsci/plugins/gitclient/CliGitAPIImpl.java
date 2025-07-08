@@ -602,8 +602,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     args.add("--depth=" + depth);
                 }
 
-                // TODO check git min version here
-                if (filterSpec != null) {
+                if (filterSpec != null && isAtLeastVersion(2, 22, 0, 0)) {
                     // in the future, we could add --refetch if we detect a change in the filter configuration to
                     // trigger maintenance
                     args.add("--filter=" + filterSpec);
