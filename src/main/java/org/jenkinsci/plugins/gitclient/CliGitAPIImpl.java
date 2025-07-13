@@ -1788,6 +1788,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new File(workspace, pathJoin(".git", "shallow")).exists();
     }
 
+    /** Returns true if the remote has a promisor configured for missing blobs. */
+    public boolean hasPromisor(String name) throws GitException, InterruptedException {
+        String result = launchCommand("config", "--get", "remote." + name + ".promisor");
+        return "true".equals(StringUtils.trim(firstLine(result)));
+    }
+
     private String pathJoin(String a, String b) {
         return new File(a, b).toString();
     }
@@ -2115,6 +2121,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String launchCommandWithCredentials(
             ArgumentListBuilder args,
             File workDir,
+            StandardCredentials credentials,
+            @NonNull URIish url,
+            Integer timeout)
+            throws GitException, InterruptedException {
+                return launchCommandWithCredentials(args, workDir, environment, credentials, url timeout);
+            }
+
+    private String launchCommandWithCredentials(
+            ArgumentListBuilder args,
+            File workDir,
+            EnvVars env,
             StandardCredentials credentials,
             @NonNull URIish url,
             Integer timeout)
@@ -3202,7 +3219,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("-f");
                     }
                     args.add(ref);
-                    launchCommandIn(args, workspace, checkoutEnv, timeout);
+
+                    if (hasPromisor("origin")) {
+                        StandardCredentials cred = credentials.get(url);
+                        if (cred == null) {
+                            cred = defaultCredentials;
+                        }
+
+                        launchCommandWithCredentials(args, workspace, checkoutEnv, cred, new URIish(url), timeout);
+                    }
+
+                    else {
+                        launchCommandIn(args, workspace, checkoutEnv, timeout);
+                    }
 
                     if (lfsRemote != null) {
                         final String url = getRemoteUrl(lfsRemote);
