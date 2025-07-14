@@ -1790,8 +1790,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** Returns true if the remote has a promisor configured for missing blobs. */
     public boolean hasPromisor(String name) throws GitException, InterruptedException {
-        String result = launchCommand("config", "--get", "remote." + name + ".promisor");
-        return "true".equals(StringUtils.trim(firstLine(result)));
+        try {
+            return launchCommand("config", "remote." + name + ".promisor").contains("true");
+        } catch (GitException ge) {
+            return false;
+        }
     }
 
     private String pathJoin(String a, String b) {
@@ -2125,8 +2128,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @NonNull URIish url,
             Integer timeout)
             throws GitException, InterruptedException {
-                return launchCommandWithCredentials(args, workDir, environment, credentials, url timeout);
-            }
+        return launchCommandWithCredentials(args, workDir, environment, credentials, url, timeout);
+    }
 
     private String launchCommandWithCredentials(
             ArgumentListBuilder args,
@@ -2144,7 +2147,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Path passwordFile = null;
         Path passphrase = null;
         Path knownHostsTemp = null;
-        EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
             env.put("GIT_TERMINAL_PROMPT", "false"); // Don't prompt for auth from command line git
@@ -3220,16 +3222,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     args.add(ref);
 
-                    if (hasPromisor("origin")) {
+                    final String remote = "origin";
+                    if (hasPromisor(remote)) {
+                        final String url = getRemoteUrl(remote);
                         StandardCredentials cred = credentials.get(url);
                         if (cred == null) {
                             cred = defaultCredentials;
                         }
 
-                        launchCommandWithCredentials(args, workspace, checkoutEnv, cred, new URIish(url), timeout);
-                    }
-
-                    else {
+                        try {
+                            launchCommandWithCredentials(args, workspace, checkoutEnv, cred, new URIish(url), timeout);
+                        } catch (URISyntaxException e) {
+                            throw new GitException("Invalid URL " + url, e);
+                        }
+                    } else {
                         launchCommandIn(args, workspace, checkoutEnv, timeout);
                     }
 
