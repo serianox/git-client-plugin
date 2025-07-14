@@ -3222,18 +3222,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     args.add(ref);
 
-                    final String remote = "origin";
-                    if (hasPromisor(remote)) {
-                        final String url = getRemoteUrl(remote);
-                        StandardCredentials cred = credentials.get(url);
+                    String repoUrl = null;
+                    try {
+                        String defaultRemote = getDefaultRemote();
+                        if (defaultRemote != null && !defaultRemote.isEmpty() && hasPromisor(defaultRemote)) {
+                            repoUrl = getRemoteUrl(defaultRemote);
+                        }
+                    } catch (GitException e) {
+                        /* Nothing to do, just keeping repoUrl = null */
+                    }
+
+                    if (repoUrl != null) {
+                        StandardCredentials cred = credentials.get(repoUrl);
                         if (cred == null) {
                             cred = defaultCredentials;
                         }
 
                         try {
-                            launchCommandWithCredentials(args, workspace, checkoutEnv, cred, new URIish(url), timeout);
+                            launchCommandWithCredentials(
+                                    args, workspace, checkoutEnv, cred, new URIish(repoUrl), timeout);
                         } catch (URISyntaxException e) {
-                            throw new GitException("Invalid URL " + url, e);
+                            throw new GitException("Invalid URL " + repoUrl, e);
                         }
                     } else {
                         launchCommandIn(args, workspace, checkoutEnv, timeout);
